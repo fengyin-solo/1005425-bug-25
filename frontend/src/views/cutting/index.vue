@@ -63,6 +63,27 @@
       </tbody>
     </table>
 
+    <section class="ledger-box">
+      <h3 class="ledger-title">已落实避险场所台账（由避险场所复核通过后挂入，同一场所编号只挂一条）</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th v-for="column in ledgerColumns" :key="column">{{ column }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in ledgerRows" :key="`ledger-${String(row.id)}`">
+            <td v-for="column in ledgerColumns" :key="column">{{ row[column] ?? '—' }}</td>
+          </tr>
+          <tr v-if="!ledgerRows.length">
+            <td :colspan="ledgerColumns.length" class="empty-state">
+              暂无已落实场所：避险场所复核通过后会自动在这里挂一条
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <footer class="page-foot">
       <span>共 {{ total }} 条削坡减载记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
@@ -74,6 +95,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import {
+  cuttingLedgerRows,
   downloadEntries,
   listEntries,
   moduleMeta,
@@ -83,15 +105,17 @@ import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('cutting')
 const columns = ["工序编号", "所属工程", "削坡方量", "坡比要求", "开挖高程", "验收日期", "验收人", "工序状态"]
+const ledgerColumns = ["场所编号", "场所名称", "所属工程", "验收日期", "验收人", "落实状态"]
 const actions = ["确认开工", "提交验收", "确认通过"]
 const statuses = ["待开工", "施工中", "待验收", "已验收"]
-const stats = [{"label": "施工中工序", "value": 0}, {"label": "待验收工序", "value": 0}, {"label": "累计削坡方量", "value": 0}]
 
 const rows = ref<EntryRow[]>([])
+const ledgerRows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
+const stats = ref([{"label": "施工中工序", "value": 0}, {"label": "待验收工序", "value": 0}, {"label": "已落实场所", "value": 0}])
 const statusSummary = computed(() =>
   statuses.map((status: string) => ({
     status,
@@ -128,6 +152,13 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    ledgerRows.value = cuttingLedgerRows()
+    const countOf = (status: string) => rows.value.filter((row) => String(row.status) === status).length
+    stats.value = [
+      { label: '施工中工序', value: countOf('施工中') },
+      { label: '待验收工序', value: countOf('待验收') },
+      { label: '已落实场所', value: ledgerRows.value.length },
+    ]
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '削坡减载列表读取失败'
   }

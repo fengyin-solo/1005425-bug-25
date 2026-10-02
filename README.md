@@ -68,4 +68,8 @@ npm run build
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
   `frontend/src/data/seed.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
+- 避险场所按「待核验 → 可启用 → 已启用 → 已关闭」逐级流转，越级挡下；启用门禁的优先级是
+  **可容纳人数 ＞ 开放条件**：人数缺失提示补齐，0、负数或非正整数一律退回重填，人数有效后才
+  校验开放条件。判定口径集中在 `frontend/src/api/refuge-service.ts`，侧栏、详情面板、复核抽屉
+  和启用动作共用这一份。复核通过的场所会在削坡减载模块挂一条「已落实场所」台账（按场所编号去重）。
 - 想回到初始数据：清掉浏览器里 `geohazard-patrol:entries` 这一项，或调用 `resetModule(模块)`。
