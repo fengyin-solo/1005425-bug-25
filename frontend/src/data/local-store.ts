@@ -1,3 +1,4 @@
+import { seedImplementedShelters } from './cutting-ledger'
 import { SEED_ROWS } from './seed'
 import type { EntryRow } from './types'
 
@@ -11,18 +12,24 @@ function clone<T>(value: T): T {
 function readStorage(): Record<string, EntryRow[]> {
   const fallback = clone(SEED_ROWS)
   if (typeof window === 'undefined' || !window.localStorage) {
+    seedImplementedShelters(fallback.refuge ?? [])
     return fallback
   }
   const raw = window.localStorage.getItem(STORAGE_KEY)
   if (!raw) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(fallback))
+    seedImplementedShelters(fallback.refuge ?? [])
     return fallback
   }
   try {
     const parsed = JSON.parse(raw) as Record<string, EntryRow[]>
-    return { ...fallback, ...parsed }
+    const merged = { ...fallback, ...parsed }
+    // 老版本缓存里没有新增的示例场所时，台账也按当前数据补齐一遍。
+    seedImplementedShelters(merged.refuge ?? [])
+    return merged
   } catch {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(fallback))
+    seedImplementedShelters(fallback.refuge ?? [])
     return fallback
   }
 }

@@ -9,6 +9,7 @@ const Warning = () => import('@/views/warning/index.vue')
 const Patrol = () => import('@/views/patrol/index.vue')
 const Relocate = () => import('@/views/relocate/index.vue')
 const Refuge = () => import('@/views/refuge/index.vue')
+const RefugeDetail = () => import('@/views/refuge/detail.vue')
 const Drill = () => import('@/views/drill/index.vue')
 const Project = () => import('@/views/project/index.vue')
 const Cutting = () => import('@/views/cutting/index.vue')
@@ -32,6 +33,7 @@ const router = createRouter({
     { path: '/patrol', name: 'patrol', component: Patrol },
     { path: '/relocate', name: 'relocate', component: Relocate },
     { path: '/refuge', name: 'refuge', component: Refuge },
+    { path: '/refuge/:id(\\d+)', name: 'refuge-detail', component: RefugeDetail },
     { path: '/drill', name: 'drill', component: Drill },
     { path: '/project', name: 'project', component: Project },
     { path: '/cutting', name: 'cutting', component: Cutting },

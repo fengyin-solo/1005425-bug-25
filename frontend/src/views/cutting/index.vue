@@ -24,6 +24,31 @@
       </span>
     </p>
 
+    <section class="ledger-box">
+      <h3>已落实避险场所（削坡减载联动台账）</h3>
+      <p class="ledger-hint">
+        避险场所复核通过后自动挂入，同一场所编号只挂一条；重复复核不会新增。
+      </p>
+      <table class="data-table ledger-table">
+        <thead>
+          <tr>
+            <th v-for="column in ledgerColumns" :key="column">{{ column }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in ledgerRows" :key="item.id">
+            <td v-for="column in ledgerColumns" :key="column">{{ item[column] ?? '—' }}</td>
+          </tr>
+          <tr v-if="!ledgerRows.length">
+            <td :colspan="ledgerColumns.length" class="empty-state">
+              台账暂无已落实避险场所：避险场所复核通过后会自动挂到这里
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="page-foot ledger-foot">共 {{ ledgerRows.length }} 条已落实场所记录</p>
+    </section>
+
     <form class="filter-bar" @submit.prevent="reload">
       <label v-for="field in filterFields" :key="field" class="filter-item">
         <span>{{ field }}</span>
@@ -79,19 +104,22 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
-import type { EntryRow } from '@/data/types'
+import { listImplementedShelters } from '@/data/cutting-ledger'
+import type { EntryRow, ImplementedShelter } from '@/data/types'
 
 const meta = moduleMeta('cutting')
 const columns = ["工序编号", "所属工程", "削坡方量", "坡比要求", "开挖高程", "验收日期", "验收人", "工序状态"]
 const actions = ["确认开工", "提交验收", "确认通过"]
 const statuses = ["待开工", "施工中", "待验收", "已验收"]
 const stats = [{"label": "施工中工序", "value": 0}, {"label": "待验收工序", "value": 0}, {"label": "累计削坡方量", "value": 0}]
+const ledgerColumns = ["场所编号", "场所名称", "可容纳人数", "开放条件", "核验结果", "落实日期"]
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
+const ledgerRows = ref<ImplementedShelter[]>([])
 const statusSummary = computed(() =>
   statuses.map((status: string) => ({
     status,
@@ -128,6 +156,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    ledgerRows.value = listImplementedShelters()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '削坡减载列表读取失败'
   }

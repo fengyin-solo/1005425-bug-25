@@ -28,6 +28,10 @@ export function listEntries(key: string, filters: Record<string, string> = {}): 
   return { items: matched, total: matched.length, page: 1, size: matched.length }
 }
 
+export function getEntry(key: string, id: number): EntryRow | undefined {
+  return listRows(key).find((row) => Number(row.id) === id)
+}
+
 export function runAction(key: string, id: number, action: string): ActionResult {
   const meta = moduleMeta(key)
   const target = meta.actionTargets[action]
@@ -42,6 +46,18 @@ export function runAction(key: string, id: number, action: string): ActionResult
   const current = String(rows[index].status)
   if (current === target) {
     return { ok: false, message: `${meta.entity}已经是「${target}」，不用重复操作` }
+  }
+  // 状态机：登记过源状态白名单的，当前状态必须在名单里；没登记的至少要求向前流转。
+  // 越级、回退、跨分支操作都在这里挡下，页面按钮点错也不会写脏状态。
+  const allowedFrom = meta.actionFrom?.[action]
+  const targetIndex = meta.statuses.indexOf(target)
+  const currentIndex = meta.statuses.indexOf(current)
+  if (allowedFrom) {
+    if (!allowedFrom.includes(current)) {
+      return { ok: false, message: `「${current}」不能${action}，需先流转到「${allowedFrom.join('、')}」` }
+    }
+  } else if (currentIndex >= 0 && targetIndex >= 0 && targetIndex <= currentIndex) {
+    return { ok: false, message: `「${current}」不能${action}到「${target}」，状态只能依次向前流转` }
   }
   const lastStatus = meta.statuses[meta.statuses.length - 1]
   const updated: EntryRow = {
